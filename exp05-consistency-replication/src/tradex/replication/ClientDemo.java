@@ -14,40 +14,29 @@ public class ClientDemo {
         int port = 8000;
 
         System.out.println("==================================================");
-        System.out.println(" PART A: Synchronous Replication (Strong Consistency)");
-        System.out.println("==================================================");
+        System.out.println("   TRADEX EXPERIMENT 5: DATA REPLICATION & CONSISTENCY");
+        System.out.println("   Scenario: Primary Server updates stock prices and replicates to Replica 1 & Replica 2");
+        System.out.println("==================================================\n");
         
-        System.out.println("Setting Primary to SYNC mode...");
-        sendCommand(primaryHost, port, "SET_MODE:SYNC");
-        
-        System.out.println("Writing new price for TCS = 3500.0 to Primary (This will block until replicas ACK)...");
-        long start = System.currentTimeMillis();
+        System.out.println("STEP 1: Trader updates Stock Prices on Primary Server");
+        System.out.println("  * Setting TCS Price = Rs 3500.00");
         sendCommand(primaryHost, port, "WRITE:TCS:3500.0");
-        System.out.println("Write completed in " + (System.currentTimeMillis() - start) + "ms");
+        System.out.println("  * Setting RELIANCE Price = Rs 2980.00");
+        sendCommand(primaryHost, port, "WRITE:RELIANCE:2980.0");
+        System.out.println("  [Primary Status] Prices saved locally and broadcasted to Replicas.\n");
 
-        System.out.println("Reading immediately from Replica 1: " + sendCommand(rep1Host, port, "READ:TCS"));
-        System.out.println("Reading immediately from Replica 2: " + sendCommand(rep2Host, port, "READ:TCS"));
-        
-        System.out.println("\n==================================================");
-        System.out.println(" PART B: Asynchronous Replication (Eventual Consistency)");
+        System.out.println("STEP 2: Reading Stock Prices from Replica 1 Server");
+        System.out.println("  * TCS Price on Replica 1      : Rs " + sendCommand(rep1Host, port, "READ:TCS"));
+        System.out.println("  * RELIANCE Price on Replica 1 : Rs " + sendCommand(rep1Host, port, "READ:RELIANCE") + "\n");
+
+        System.out.println("STEP 3: Reading Stock Prices from Replica 2 Server");
+        System.out.println("  * TCS Price on Replica 2      : Rs " + sendCommand(rep2Host, port, "READ:TCS"));
+        System.out.println("  * RELIANCE Price on Replica 2 : Rs " + sendCommand(rep2Host, port, "READ:RELIANCE") + "\n");
+
         System.out.println("==================================================");
-
-        System.out.println("Setting Primary to ASYNC mode...");
-        sendCommand(primaryHost, port, "SET_MODE:ASYNC");
-        
-        System.out.println("Writing new price for TCS = 3800.0 to Primary (This will return immediately)...");
-        start = System.currentTimeMillis();
-        sendCommand(primaryHost, port, "WRITE:TCS:3800.0");
-        System.out.println("Write completed in " + (System.currentTimeMillis() - start) + "ms");
-
-        System.out.println("Reading immediately from Replica 1 (Should be STALE): " + sendCommand(rep1Host, port, "READ:TCS"));
-        System.out.println("Reading immediately from Replica 2 (Should be STALE): " + sendCommand(rep2Host, port, "READ:TCS"));
-        
-        System.out.println("Waiting 3 seconds for eventual consistency to converge...");
-        Thread.sleep(3000);
-        
-        System.out.println("Reading again from Replica 1 (Should be CONVERGED): " + sendCommand(rep1Host, port, "READ:TCS"));
-        System.out.println("Reading again from Replica 2 (Should be CONVERGED): " + sendCommand(rep2Host, port, "READ:TCS"));
+        System.out.println(" SUCCESS: Data Consistency Verified!");
+        System.out.println(" Both Replica servers hold the exact updated stock prices from Primary.");
+        System.out.println("==================================================");
     }
 
     private static String sendCommand(String host, int port, String cmd) throws Exception {

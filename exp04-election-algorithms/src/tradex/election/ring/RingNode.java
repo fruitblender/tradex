@@ -62,11 +62,12 @@ public class RingNode {
                     for (String s : listStr.split(",")) {
                         if (!s.isEmpty()) max = Math.max(max, Integer.parseInt(s));
                     }
-                    System.out.println("[Node " + myId + "] Election concluded. Highest ID is " + max + ". Sending COORDINATOR.");
+                    System.out.println("[TradeX Ring Server " + myId + "] Ring token wrapped around! Active candidate list: [" + listStr + "]. Highest ID Server " + max + " elected as Primary Matching Engine.");
                     passMessage("COORDINATOR:" + max);
                 } else {
                     // Append self and pass on
                     String newList = listStr + myId + ",";
+                    System.out.println("[TradeX Ring Server " + myId + "] Appending Server ID " + myId + " to active election token and forwarding to next active ring peer...");
                     passMessage("ELECTION:" + newList);
                 }
                 out.println("ACK");
@@ -74,18 +75,19 @@ public class RingNode {
                 int leaderId = Integer.parseInt(msg.split(":")[1]);
                 if (leaderId != this.coordinatorId) {
                     this.coordinatorId = leaderId;
-                    System.out.println("[Node " + myId + "] New Coordinator is Node " + leaderId);
+                    System.out.println("[TradeX Ring Server " + myId + "] Updated Primary Order Matching Engine to Server " + leaderId + ". Forwarding COORDINATOR token around ring...");
                     passMessage(msg); // Keep passing until it wraps
                 } else {
-                    System.out.println("[Node " + myId + "] Coordinator message wrapped around. Stop.");
+                    System.out.println("[TradeX Ring Server " + myId + "] COORDINATOR token wrapped full ring. Election complete.");
                 }
                 out.println("ACK");
             } else if (msg.equals("FAIL")) {
                 isActive.set(false);
-                System.out.println("[Node " + myId + "] SIMULATING FAILURE.");
+                System.out.println("[TradeX Ring Server " + myId + "] CRITICAL: Server " + myId + " crashed due to network partition!");
                 out.println("FAILED");
             } else if (msg.equals("START_ELECTION")) {
                 out.println("ACK");
+                System.out.println("[TradeX Ring Server " + myId + "] Primary failure detected! Initiating Ring Election Token...");
                 passMessage("ELECTION:" + myId + ",");
             }
         } catch (Exception e) {}
@@ -106,11 +108,11 @@ public class RingNode {
             
             String resp = sendMessage(nextPeer.host, nextPeer.port, msg);
             if (!"ERROR".equals(resp)) {
-                System.out.println("[Node " + myId + "] Passed message to Node " + nextPeer.id);
+                System.out.println("[TradeX Ring Server " + myId + "] Successfully passed ring message to next active Peer Server " + nextPeer.id);
                 return; // successfully passed
             }
         }
-        System.out.println("[Node " + myId + "] Could not pass message; all other nodes seem dead.");
+        System.out.println("[TradeX Ring Server " + myId + "] Ring communication error: All other ring peers unreachable.");
     }
 
     private String sendMessage(String host, int port, String msg) {

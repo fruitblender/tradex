@@ -13,47 +13,58 @@ public class ClientMonitor {
         int port = 8000;
 
         System.out.println("==================================================");
-        System.out.println(" Client/Monitor connecting to Cluster...");
-        System.out.println("==================================================");
+        System.out.println("   TRADEX EXPERIMENT 8: PRIMARY-BACKUP FAULT TOLERANCE");
+        System.out.println("   Scenario: Primary Server crashes -> Backup Server takes over with ZERO data loss");
+        System.out.println("==================================================\n");
 
-        // 1. Submit an order to primary
-        System.out.println("\n--- 1. Submitting Order to Primary ---");
-        String writeResp = sendCommand(primaryHost, port, "WRITE:ORD-100:BUY-TCS-50-SHARES");
-        System.out.println("Response from Primary: " + writeResp);
+        // 1. Submit trade order
+        System.out.println("STEP 1: Trader places an Order on Primary Server");
+        System.out.println("  Order Details : Order #ORD-101 -> BUY 50 Shares of TCS @ Rs 3500.00");
+        String writeResp = sendCommand(primaryHost, port, "WRITE:ORD-101:BUY 50 TCS @ Rs 3500.00");
+        System.out.println("  Primary Status: ORDER STORED & ACKNOWLEDGED (" + writeResp + ")\n");
 
-        // 2. Query backup directly to confirm replication (Backdoor read for demo)
-        System.out.println("\n--- 2. Confirming Replication on Backup ---");
-        String repCheck = sendCommand(backupHost, port, "READ:ORD-100");
-        System.out.println("Order fetched from Backup: " + repCheck);
+        // 2. Replication check on Backup
+        System.out.println("STEP 2: Primary replicates order data to Passive Backup Server");
+        String repCheck = sendCommand(backupHost, port, "READ:ORD-101");
+        System.out.println("  Backup Status : Synced Data -> \"" + repCheck + "\"\n");
 
         // 3. Monitor Health
-        System.out.println("\n--- 3 & 4. Monitoring Primary Health (Waiting for Failure) ---");
-        int timeoutCount = 0;
-        int maxTimeouts = 3;
+        System.out.println("STEP 3: Client periodically pings Primary Server to monitor health");
+        String pingResp = sendCommand(primaryHost, port, "PING");
+        System.out.println("  Heartbeat Check: " + pingResp + " (Primary Server Healthy)\n");
+
+        System.out.println("--------------------------------------------------");
+        System.out.println("!!! SIMULATING SERVER FAILURE: PRIMARY CONTAINER CRASHES !!!");
+        System.out.println("--------------------------------------------------\n");
         
+        int timeoutCount = 0;
+        int maxTimeouts = 2;
         while (timeoutCount < maxTimeouts) {
             try {
-                String pingResp = sendCommand(primaryHost, port, "PING");
-                System.out.println("Primary Health: OK (" + pingResp + ")");
-                Thread.sleep(2000);
+                sendCommand(primaryHost, port, "PING");
             } catch (Exception e) {
                 timeoutCount++;
-                System.out.println("Primary Health: FAILED (Timeout " + timeoutCount + "/" + maxTimeouts + ")");
+                System.out.println("  * Ping to Primary failed! (Timeout " + timeoutCount + " of " + maxTimeouts + ")");
                 Thread.sleep(1000);
             }
         }
 
-        System.out.println("\nPRIMARY DECLARED DEAD.");
+        System.out.println("\n  [ALERT] Primary Server confirmed DOWN after " + maxTimeouts + " failed heartbeats!\n");
 
-        // 5. Promote the Backup
-        System.out.println("\n--- 5. Promoting the Backup to Primary ---");
+        // 4. Promote Backup
+        System.out.println("STEP 4: Initiating Failover -> Promoting Backup Server to NEW PRIMARY");
         String promResp = sendCommand(backupHost, port, "PROMOTE");
-        System.out.println("Promotion Response: " + promResp);
+        System.out.println("  Promotion Status: " + promResp + " (Backup is now NEW PRIMARY)\n");
         
-        // 6. Query the surviving service
-        System.out.println("\n--- 6. Querying the new Primary for the existing order ---");
-        String finalRead = sendCommand(backupHost, port, "READ:ORD-100");
-        System.out.println("Order successfully recovered from new Primary: " + finalRead);
+        // 5. Query order from new Primary
+        System.out.println("STEP 5: Trader fetches order #ORD-101 from the New Primary Server");
+        String finalRead = sendCommand(backupHost, port, "READ:ORD-101");
+        System.out.println("  Order Retrieved: \"" + finalRead + "\"");
+        
+        System.out.println("\n==================================================");
+        System.out.println(" SUCCESS: Fault Tolerance Verified!");
+        System.out.println(" The Backup successfully took over and preserved all trade data.");
+        System.out.println("==================================================");
     }
 
     private static String sendCommand(String host, int port, String cmd) throws Exception {

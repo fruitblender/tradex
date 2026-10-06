@@ -62,19 +62,19 @@ public class BullyNode {
                 int senderId = Integer.parseInt(msg.split(":")[1]);
                 out.println("OK");
                 if (myId > senderId) {
-                    // Start own election in a new thread
                     new Thread(this::startElection).start();
                 }
             } else if (msg.startsWith("COORDINATOR")) {
                 coordinatorId = Integer.parseInt(msg.split(":")[1]);
-                System.out.println("[Node " + myId + "] New Coordinator is Node " + coordinatorId);
+                System.out.println("[TradeX Server " + myId + "] Accepted Server " + coordinatorId + " as NEW Primary Order Matching Engine!");
                 out.println("ACK");
             } else if (msg.equals("FAIL")) {
                 isActive.set(false);
-                System.out.println("[Node " + myId + "] SIMULATING FAILURE.");
+                System.out.println("[TradeX Server " + myId + "] CRITICAL: Primary Matching Engine CRASHED during peak volume!");
                 out.println("FAILED");
             } else if (msg.equals("START_ELECTION")) {
                 out.println("ACK");
+                System.out.println("[TradeX Server " + myId + "] Detected Primary Engine failure! Initiating Bully Leader Election...");
                 new Thread(this::startElection).start();
             } else if (msg.equals("PING")) {
                 out.println("PONG");
@@ -86,7 +86,7 @@ public class BullyNode {
 
     private void startElection() {
         if (!isActive.get()) return;
-        System.out.println("[Node " + myId + "] Starting ELECTION.");
+        System.out.println("[TradeX Server " + myId + "] Broadcasting ELECTION message to higher ID servers...");
         boolean higherNodeResponded = false;
 
         for (Peer peer : allPeers) {
@@ -94,12 +94,13 @@ public class BullyNode {
                 String response = sendMessage(peer.host, peer.port, "ELECTION:" + myId);
                 if ("OK".equals(response)) {
                     higherNodeResponded = true;
+                    System.out.println("[TradeX Server " + myId + "] Server " + peer.id + " acknowledged higher priority (sent OK).");
                 }
             }
         }
 
         if (!higherNodeResponded) {
-            System.out.println("[Node " + myId + "] No higher nodes responded. I AM THE COORDINATOR.");
+            System.out.println("[TradeX Server " + myId + "] No higher priority servers responded. PROMOTING SERVER " + myId + " TO PRIMARY MATCHING ENGINE!");
             coordinatorId = myId;
             for (Peer peer : allPeers) {
                 if (peer.id < myId) {
@@ -107,7 +108,7 @@ public class BullyNode {
                 }
             }
         } else {
-            System.out.println("[Node " + myId + "] Higher node responded. Waiting for COORDINATOR message.");
+            System.out.println("[TradeX Server " + myId + "] Step down. Waiting for Server " + (myId + 1) + "+ to assume Primary role.");
         }
     }
 
