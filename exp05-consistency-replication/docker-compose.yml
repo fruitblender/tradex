@@ -1,0 +1,38 @@
+services:
+  primary:
+    build:
+      context: ../
+      dockerfile: exp05-consistency-replication/Dockerfile
+    container_name: primary
+    command: ["java", "tradex.replication.PrimaryNode"]
+    environment:
+      - NODE_PORT=8000
+      - REPLICAS=replica1:8000,replica2:8000
+    networks:
+      - tradex-repl
+
+  replica1:
+    build:
+      context: ../
+      dockerfile: exp05-consistency-replication/Dockerfile
+    container_name: replica1
+    command: ["java", "tradex.replication.ReplicaNode"]
+    environment:
+      - NODE_PORT=8000
+    networks:
+      - tradex-repl
+
+  replica2:
+    build:
+      context: ../
+      dockerfile: exp05-consistency-replication/Dockerfile
+    container_name: replica2
+    command: ["java", "tradex.replication.ReplicaNode"]
+    environment:
+      - NODE_PORT=8000
+    networks:
+      - tradex-repl
+
+networks:
+  tradex-repl:
+    driver: bridge

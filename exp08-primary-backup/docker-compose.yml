@@ -1,0 +1,29 @@
+services:
+  primary:
+    build:
+      context: ../
+      dockerfile: exp08-primary-backup/Dockerfile
+    container_name: primary
+    command: ["java", "tradex.primarybackup.ServerNode"]
+    environment:
+      - NODE_PORT=8000
+      - NODE_MODE=PRIMARY
+      - BACKUP_ADDR=backup:8000
+    networks:
+      - tradex-ft
+
+  backup:
+    build:
+      context: ../
+      dockerfile: exp08-primary-backup/Dockerfile
+    container_name: backup
+    command: ["java", "tradex.primarybackup.ServerNode"]
+    environment:
+      - NODE_PORT=8000
+      - NODE_MODE=BACKUP
+    networks:
+      - tradex-ft
+
+networks:
+  tradex-ft:
+    driver: bridge

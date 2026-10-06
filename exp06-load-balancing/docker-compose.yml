@@ -1,0 +1,55 @@
+services:
+  loadbalancer:
+    build:
+      context: ../
+      dockerfile: exp06-load-balancing/Dockerfile
+    container_name: loadbalancer
+    command: ["java", "tradex.loadbalancer.LoadBalancer"]
+    environment:
+      - LB_PORT=8000
+      - WORKERS=worker1:8001,worker2:8002,worker3:8003
+    networks:
+      - tradex-lb
+
+  worker1:
+    build:
+      context: ../
+      dockerfile: exp06-load-balancing/Dockerfile
+    container_name: worker1
+    command: ["java", "tradex.loadbalancer.WorkerNode"]
+    environment:
+      - WORKER_ID=FAST_WORKER
+      - WORKER_PORT=8001
+      - PROCESSING_DELAY=50
+    networks:
+      - tradex-lb
+
+  worker2:
+    build:
+      context: ../
+      dockerfile: exp06-load-balancing/Dockerfile
+    container_name: worker2
+    command: ["java", "tradex.loadbalancer.WorkerNode"]
+    environment:
+      - WORKER_ID=MED_WORKER
+      - WORKER_PORT=8002
+      - PROCESSING_DELAY=200
+    networks:
+      - tradex-lb
+
+  worker3:
+    build:
+      context: ../
+      dockerfile: exp06-load-balancing/Dockerfile
+    container_name: worker3
+    command: ["java", "tradex.loadbalancer.WorkerNode"]
+    environment:
+      - WORKER_ID=SLOW_WORKER
+      - WORKER_PORT=8003
+      - PROCESSING_DELAY=500
+    networks:
+      - tradex-lb
+
+networks:
+  tradex-lb:
+    driver: bridge

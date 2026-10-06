@@ -1,0 +1,20 @@
+# Compiled class files
+*.class
+out/
+target/
+bin/
+
+# Log files
+*.log
+
+# Docker
+.docker/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.idea/
+*.iml
+.vscode/

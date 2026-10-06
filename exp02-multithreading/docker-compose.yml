@@ -1,0 +1,26 @@
+services:
+  server:
+    build:
+      context: ../
+      dockerfile: exp02-multithreading/Dockerfile
+    container_name: tradex-multithread-server
+    command: ["java", "tradex.multithread.TradingServer"]
+    networks:
+      - tradex-net
+
+  client:
+    build:
+      context: ../
+      dockerfile: exp02-multithreading/Dockerfile
+    container_name: tradex-multithread-client
+    command: ["java", "tradex.multithread.TradingClient"]
+    environment:
+      - SERVER_HOST=server
+    depends_on:
+      - server
+    networks:
+      - tradex-net
+
+networks:
+  tradex-net:
+    driver: bridge
